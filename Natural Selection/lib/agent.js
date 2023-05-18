@@ -5,13 +5,10 @@ class Agent {
 
   // HYPER PARAMS
   speed = 7; // will be a hyperparameter
-  energy = 100;
+  energy = 10;
   vision = 50;
 
-  // 
-  
-
-
+  //
 
   constructor(startX, startY) {
     this.position = createVector(startX, startY);
@@ -49,7 +46,6 @@ class Agent {
         this.position.x += this.speed;
         break;
     }
-
   }
 
   draw() {
@@ -58,41 +54,32 @@ class Agent {
     fill(this.isAlive ? "white" : "red");
     rect(this.position.x, this.position.y, 10, 10);
     push();
-      noFill();
-      stroke(255, 255, 255,50);
-      circle(this.position.x, this.position.y, this.vision)
+    noFill();
+    stroke(255, 255, 255, 50);
+    circle(this.position.x, this.position.y, this.vision);
     pop();
-    
+
     pop();
   }
 
-  createBrain() {
-    const model = tf.sequential();
-    model.add(
-      tf.layers.dense({ units: 4, inputShape: [2], activation: "softmax" })
-    );
-    this.brain = model;
-  }
-
-  async chooseAction(foodLocation) {
-    if (!foodLocation) {
+  async chooseAction(food) {
+    if (!food) {
       const action = Math.floor(random(0, 5));
       this.move(action);
     } else {
       const brainAction = await this.brain.chooseAction([
         this.position.x,
         this.position.y,
-        foodLocation[0],
-        foodLocation[1],
+        food[0],
+        food[1],
       ]);
       this.move(brainAction);
-      await tf.nextFrame();
     }
   }
 
   drainEnergy() {
     this.energy -= 0.5;
-    if(this.energy < 0) {
+    if (this.energy < 0) {
       this.killAgent();
     }
   }
@@ -101,17 +88,36 @@ class Agent {
     this.isAlive = false;
   }
 
-  searchFood() {
-    // TODO: Implementation pending
-    return;
+  searchFood(foods) {
+    let nearbyFood = [];
+
+    foods.forEach((food) => {
+      const distance = food.position.dist(this.position);
+      if (distance < this.vision) {
+        nearbyFood.push(food);
+      }
+    });
+
+    return nearbyFood;
   }
 
-  live() {
+  live(enviornment) {
     if (this.isAlive) {
-      const food = this.searchFood();
-      this.chooseAction(food);
+      const foods = this.searchFood(enviornment.food);
+      const randomFood = random(foods);
+      this.chooseAction(randomFood).then((_) => {
+        if (randomFood) {
+          this.eatFood(randomFood);
+        }
+      });
     }
-    
     this.draw();
+  }
+
+  eatFood(food) {
+    if (food.position.dist(this.position) <= this.vision) {
+      this.energy += 10;
+      food.eat();
+    }
   }
 }
