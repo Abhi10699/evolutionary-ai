@@ -4,15 +4,20 @@ class Agent {
   isAlive = true;
 
   // HYPER PARAMS
-  speed = 7; // will be a hyperparameter
+  speed = random(5, 20); // will be a hyperparameter
   energy = 10;
-  vision = 50;
+  vision = random(50, 100);
+  eatRadius = random(10, 50);
 
   //
 
-  constructor(startX, startY) {
+  constructor(startX, startY, brainCopy) {
     this.position = createVector(startX, startY);
-    this.brain = new Brain();
+    if (brainCopy) {
+      this.brain = brainCopy;
+    } else {
+      this.brain = new Brain();
+    }
   }
 
   navigate(destination) {
@@ -52,11 +57,15 @@ class Agent {
     push();
     rectMode(CENTER);
     fill(this.isAlive ? "white" : "red");
-    rect(this.position.x, this.position.y, 10, 10);
+    circle(this.position.x, this.position.y, 10, 10);
     push();
     noFill();
     stroke(255, 255, 255, 50);
     circle(this.position.x, this.position.y, this.vision);
+    push();
+    stroke("orange")
+    circle(this.position.x, this.position.y, this.eatRadius);
+    pop();
     pop();
 
     pop();
@@ -72,13 +81,15 @@ class Agent {
         this.position.y,
         food[0],
         food[1],
+        food.isPoison,
+        this.energy,
       ]);
       this.move(brainAction);
     }
   }
 
   drainEnergy() {
-    this.energy -= 0.5;
+    this.energy -= this.eatRadius / this.vision;
     if (this.energy < 0) {
       this.killAgent();
     }
@@ -115,9 +126,39 @@ class Agent {
   }
 
   eatFood(food) {
-    if (food.position.dist(this.position) <= this.vision) {
-      this.energy += 10;
+    if (food.position.dist(this.position) <= this.eatRadius) {
+      this.energy += food.foodEnergy;
       food.eat();
     }
+  }
+
+  clone() {
+    const posX = random(0, 100);
+    const posY = random(0, height);
+    const copyBrain = new Brain();
+    copyBrain.brain.setWeights(this.brain.brain.getWeights());
+    const agentClone = new Agent(posX, posY, copyBrain);
+    agentClone.eatRadius = this.eatRadius;
+    agentClone.vision = this.vision;
+    agentClone.speed = this.speed;
+    return agentClone;
+  }
+
+  reproduce(moreReProductionProbablity) {
+    // update their brain
+    const reproducibleKids = random(0, 1) < moreReProductionProbablity ? 3 : 1;
+    const kids = [];
+    for (let i = 0; i < reproducibleKids; i++) {
+      const parentCopy = this.clone();
+      const mutationProbablity = random(0, 1);
+      if (mutationProbablity < 0.25) {
+        parentCopy.brain.mutateBrain();
+        parentCopy.vision += random(2, 5);
+        parentCopy.speed += random(2, 5);
+      }
+      kids.push(parentCopy);
+    }
+
+    return kids;
   }
 }

@@ -1,6 +1,6 @@
 const POPULATION_SIZE = 50;
-const TOTAL_FOOD_COUNT = 100;
-const TIME_LIMIT = 1000;
+const TOTAL_FOOD_COUNT = 50;
+const TIME_LIMIT = 100;
 
 class World {
   // world
@@ -16,27 +16,27 @@ class World {
   generations = [];
   totalFrames = 0;
 
-  init(width, height) {
-
+  init(width, height, initializePopulation = true) {
     this.width = width;
     this.height = height;
 
     this.agents = new Array(POPULATION_SIZE);
     this.food = new Array(TOTAL_FOOD_COUNT);
 
-
     // initialize agents
 
-    for (let i = 0; i < this.agents.length; i++) {
-      const posX = random(0, width);
-      const posY = random(0, height);
-      this.agents[i] = new Agent(posX, posY);
+    if (initializePopulation) {
+      for (let i = 0; i < POPULATION_SIZE; i++) {
+        const posX = 50;
+        const posY = i * 14 + 10;
+        this.agents[i] = new Agent(posX, posY);
+      }
     }
 
     // generate food
 
-    for (let i = 0; i < this.food.length; i++) {
-      const posX = random(0, width);
+    for (let i = 0; i < TOTAL_FOOD_COUNT; i++) {
+      const posX = random(0,width);
       const posY = random(0, height);
       this.food[i] = new Food(posX, posY);
     }
@@ -45,15 +45,24 @@ class World {
   }
 
   evolve() {
-    const allAlive = this.agents.every((agent) => agent.isAlive);
-    if (this.totalFrames < 0 || !allAlive) {
-      // find fittest
-      const fittest = this.findFittest();
-      // do reproduction
+    if (this.totalFrames < 0) {
+      const fittest = this.agents
+        .filter((agent) => agent.energy >= 5)
+        .sort((a, b) => a.position.x - b.position.x);
 
-      // start again
-      this.reset();
-      // noLoop();
+      const allEnergySum = Math.floor(
+        fittest.map((a) => a.energy).reduce((p, c) => p + c, 0)
+      );
+
+      if (fittest.length) {
+        const offsprings = fittest.map((individual) =>
+          individual.reproduce(individual.energy / allEnergySum)
+        );
+        const newPopulation = [...offsprings.flat()];
+        this.reset(newPopulation);
+      } else {
+        this.reset([]);
+      }
     } else {
       this.food = this.food.filter((f) => !f.isEaten);
       this.food.forEach((food) => food.draw());
@@ -62,12 +71,12 @@ class World {
     }
   }
 
-  findFittest() {
-    const fittest = this.agents.filter(agent => agent.energy >= 10);
-    return fittest;
-  }
-
-  reset() {
-    this.init(this.width, this.height);
+  reset(newPopulation) {
+    if (newPopulation && newPopulation.length != 0) {
+      this.init(this.width, this.height, false);
+      this.agents = newPopulation;
+    } else {
+      this.init(this.width, this.height);
+    }
   }
 }
