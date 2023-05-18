@@ -17,12 +17,10 @@ class Brain {
 
   mutateBrain() {}
 
-  chooseAction(inputs) {
-    return tf.tidy(async () => {
+  async chooseAction(inputs) {
       const inputTensor = tf.tensor2d([inputs]);
       const actionProbablities = await this.brain.predict(inputTensor).data()
       const maxActionProbablity = await tf.argMax(actionProbablities).data();
       return maxActionProbablity[0];
-    });
   }
 }
