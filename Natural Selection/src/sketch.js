@@ -7,5 +7,4 @@ function setup() {
 function draw() {
   background(51);
   world.evolve();
-  // noLoop();
 }
