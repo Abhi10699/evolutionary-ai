@@ -1,5 +1,5 @@
 const POPULATION_SIZE = 50;
-const TOTAL_FOOD_COUNT = 10;
+const TOTAL_FOOD_COUNT = 100;
 const TIME_LIMIT = 1000;
 
 class World {
@@ -17,22 +17,27 @@ class World {
   totalFrames = 0;
 
   init(width, height) {
+
     this.width = width;
     this.height = height;
+
+    this.agents = new Array(POPULATION_SIZE);
+    this.food = new Array(TOTAL_FOOD_COUNT);
+
 
     // initialize agents
 
     for (let i = 0; i < this.agents.length; i++) {
-      const posX = 10;
-      const posY = i * 14 + 10;
+      const posX = random(0, width);
+      const posY = random(0, height);
       this.agents[i] = new Agent(posX, posY);
     }
 
     // generate food
 
     for (let i = 0; i < this.food.length; i++) {
-      const posX = random(100, width / 2 + 100);
-      const posY = random(200, height / 2 + 100);
+      const posX = random(0, width);
+      const posY = random(0, height);
       this.food[i] = new Food(posX, posY);
     }
 
@@ -40,18 +45,26 @@ class World {
   }
 
   evolve() {
-    const allAlive = this.agents.every(agent => agent.isAlive);
+    const allAlive = this.agents.every((agent) => agent.isAlive);
     if (this.totalFrames < 0 || !allAlive) {
+      // find fittest
+      const fittest = this.findFittest();
       // do reproduction
-
 
       // start again
       this.reset();
+      // noLoop();
     } else {
+      this.food = this.food.filter((f) => !f.isEaten);
       this.food.forEach((food) => food.draw());
-      this.agents.forEach((agent) => agent.live());
+      this.agents.forEach((agent) => agent.live(this));
       this.totalFrames -= 1;
     }
+  }
+
+  findFittest() {
+    const fittest = this.agents.filter(agent => agent.energy >= 10);
+    return fittest;
   }
 
   reset() {
